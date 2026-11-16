@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<!-- index.html -->
+<!-- SPDX-License-Identifier: MIT -->
+<!-- Copyright (c) 2026 Wei-Hsu Lin -->
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page Title</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.185.1/examples/jsm/"
+    }
+  }
+  </script>
+  <!-- Can't externalize the JS cause otherwise it can't be tested locally without server due to CORS -->
+  <script type="module"> 
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    const torusView = document.getElementById('torus-view');
+
+    // Renderer: canvas is inside #torus-view
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    torusView.appendChild(renderer.domElement);
+
+    // Scene + camera
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xeeeeee);
+
+    const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100);
+    camera.up.set(0, 0, 1); // Default is y, now change to z, so the torus lying on xy moves nicely
+    camera.position.set(3, 2, 4);
+
+    // Torus (MeshNormalMaterial needs no lights)
+    const torus = new THREE.Mesh(
+      new THREE.TorusGeometry(2, 0.4, 32, 64),
+      new THREE.MeshNormalMaterial()
+    );
+    scene.add(torus);
+
+    // Add x/y/z axes. The X axis is red. The Y axis is green. The Z axis is blue.
+    const axes = new THREE.AxesHelper(1);
+    scene.add(axes);
+
+    // OrbitControls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true; // Enable the inertia feel when rotating
+    controls.enablePan = false;    // Ban panning, we don't need this
+
+    // Match the canvas to its grid cell. Fires on load and whenever the window resizes.
+    // The cell's size comes from the grid, never from the canvas, so there is no feedback loop.
+    new ResizeObserver(() => {
+      const { clientWidth: w, clientHeight: h } = torusView;
+      renderer.setSize(w, h, false); // false = don't touch CSS size, the stylesheet owns it
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }).observe(torusView);
+
+    // Render loop in browser
+    renderer.setAnimationLoop(() => {
+      controls.update();
+      renderer.render(scene, camera);
+    });
+  </script>
+</head>
+<body>
+  <div id="stage">
+    <div id="torus-view"></div>
+  </div>
+</body>
+</html>
