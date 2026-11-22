@@ -28,18 +28,56 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     torusView.appendChild(renderer.domElement);
 
+    // 2D canvas: the source of truth. The torus texture reads from it.
+    const flatView = document.getElementById('flat-view');
+    const flatCanvas = document.createElement('canvas');
+    flatCanvas.width = 1024;  // drawing resolution, independent of on-screen size
+    flatCanvas.height = 1024;
+    flatView.appendChild(flatCanvas);
+    const ctx = flatCanvas.getContext('2d');
+
+    // Texture that mirrors the canvas. Set texture.needsUpdate = true after every redraw.
+    const texture = new THREE.CanvasTexture(flatCanvas);
+    texture.colorSpace = THREE.SRGBColorSpace; // colors on the torus match the 2D view
+    texture.anisotropy = renderer.capabilities.getMaxAnisotropy(); // sharper at grazing angles
+
+    // Placeholder drawing: a grid plus a moving dot, only to show the sync works.
+    function drawFlat(t) {
+      const W = flatCanvas.width, H = flatCanvas.height;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, W, H);
+
+      const n = 12; // n x n grid
+      ctx.strokeStyle = '#888888';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let k = 0; k <= n; k++) {
+        const x = k * W / n, y = k * H / n;
+        ctx.moveTo(x, 0); ctx.lineTo(x, H);
+        ctx.moveTo(0, y); ctx.lineTo(W, y);
+      }
+      ctx.stroke();
+
+      ctx.fillStyle = '#d33';
+      ctx.beginPath();
+      ctx.arc((t * 0.10) % W, (t * 0.04) % H, 12, 0, 2 * Math.PI);
+      ctx.fill();
+
+      texture.needsUpdate = true; // the sync: push the new pixels to the GPU
+    }
+
     // Scene + camera
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0xeeeeee);
 
     const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100);
     camera.up.set(0, 0, 1); // Default is y, now change to z, so the torus lying on xy moves nicely
-    camera.position.set(3, 2, 4);
+    camera.position.set(4, 3, 5);
 
-    // Torus (MeshNormalMaterial needs no lights)
+    // Torus textured with the 2D canvas (MeshBasicMaterial needs no lights)
     const torus = new THREE.Mesh(
-      new THREE.TorusGeometry(2, 0.4, 32, 64),
-      new THREE.MeshNormalMaterial()
+      new THREE.TorusGeometry(2, 0.8, 32, 64),
+      new THREE.MeshBasicMaterial({ map: texture })
     );
     scene.add(torus);
 
@@ -62,7 +100,8 @@
     }).observe(torusView);
 
     // Render loop in browser
-    renderer.setAnimationLoop(() => {
+    renderer.setAnimationLoop((time) => {
+      drawFlat(time);
       controls.update();
       renderer.render(scene, camera);
     });
@@ -70,7 +109,19 @@
 </head>
 <body>
   <div id="stage">
+    <div id="banner" class="textdisplay">Lorem ipsum</div>
+    <div id="flat-view"></div>
     <div id="torus-view"></div>
+    <div id="torus-description">
+    This is an interactive torus implemented using <a href="https://threejs.org/">Three.js</a>.
+    Zoom and drag to see how the [surface code is implemented]. Note:
+      <span style="color: red">red</span> = X axis,
+      <span style="color: green">green</span> = Y axis and
+      <span style="color: blue">blue</span> = Z axis.
+    </div>
+    <div id="footer" class="textdisplay">Demo made by Wei-Hsu Lin with Three.js implementation
+    assistance from Claude Opus 5.5. This source code is released on GitHub under the <a href="https://opensource.org/license/mit">MIT License</a>.
+  </div>
   </div>
 </body>
 </html>
