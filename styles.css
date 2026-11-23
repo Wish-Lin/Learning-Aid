@@ -44,6 +44,7 @@ body {
   display: grid;
   place-items: center;
   font-family: sans-serif;
+  font-size: 1.5rem;
 }
 
 /* left to bottom-left: columns 9-12, rows 1-7 */
