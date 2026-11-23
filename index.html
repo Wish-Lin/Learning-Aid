@@ -99,6 +99,55 @@
         }
       }
 
+      // Draw the edges.
+      // 0 = draw gray line, 1 = draw red line (X error), 2 = draw blue line (Z error),
+      // 3 = draw green line (X+Z error). This allows me to use 1+2=3 in assignment later.
+      ctx.lineWidth = 8;
+      ctx.lineCap = "round"; // Doesn't really matter as thet get covered by the vertices
+
+      matrix1[3][3] = 1;
+
+      for (let i = 0; i < 24; i++) {
+        for (let j = 0; j < 12; j++) {
+          ctx.beginPath();
+
+          // Draw the edges, edges on the 2D boundary need extra care
+          if (i % 2) { // This is a vertical edge
+            ctx.moveTo(j*100, (i-1)*50);
+            ctx.lineTo(j*100, (i+1)*50);
+            if (j == 0) { // Left boundary, draw one more line, both only gets half of them drawn
+              ctx.moveTo(1200, (i-1)*50);
+              ctx.lineTo(1200, (i+1)*50);
+            }
+          }
+          else { // This is a horizontal edge
+            ctx.moveTo(j*100, i*50);
+            ctx.lineTo((j+1)*100, i*50);
+            if (i == 0) { // Top boundary, draw one more line, both only gets half of them drawn
+              ctx.moveTo(j*100, 1200);
+              ctx.lineTo((j+1)*100, 1200);
+            }
+          }
+
+          // Decide what color to use
+          switch (matrix1[i][j]) {
+            case 0:
+              ctx.strokeStyle = "gray";
+              break;
+            case 1:
+              ctx.strokeStyle = "indianred";
+              break;
+            case 2:
+              ctx.strokeStyle = "royalblue";
+              break;
+            case 3:
+              ctx.strokeStyle = "seagreen";
+              break;
+          }
+          ctx.stroke();
+        }
+      }
+
       // Draw the vertices.
       // 0 = draw gray dot, 1 = draw golden dot
       matrix0[0][0] = 1;
@@ -108,7 +157,7 @@
         for (let j = 0; j < 12; j++) {
           ctx.beginPath();
 
-          // Draw the dots, dots on the boundary need extra care
+          // Draw the vertices, vertices on the 2D boundary need extra care
           ctx.arc(j * 100, i * 100, dotRadius, 0, Math.PI * 2); // Every point gets one of this
           if (i == 0 && j != 0) { // Top row, draw one more point, both only gets half of them drawn
             ctx.moveTo(j * 100 + dotRadius, 1200);
@@ -132,21 +181,6 @@
           ctx.fill();
         }
       }
-      
-      // ctx.strokeStyle = '#888888';
-      // ctx.lineWidth = 2;
-      // ctx.beginPath();
-      // for (let k = 0; k <= n; k++) {
-      //   const x = k * W / n, y = k * H / n;
-      //   ctx.moveTo(x, 0); ctx.lineTo(x, H);
-      //   ctx.moveTo(0, y); ctx.lineTo(W, y);
-      // }
-      // ctx.stroke();
-
-      // ctx.fillStyle = '#d33';
-      // ctx.beginPath();
-      // ctx.arc((t * 0.10) % W, (t * 0.04) % H, 12, 0, 2 * Math.PI);
-      // ctx.fill();
 
       texture.needsUpdate = true; // the sync: push the new pixels to the GPU
     }
@@ -207,6 +241,9 @@
     </div>
     <div id="footer" class="textdisplay">Demo made by Wei-Hsu Lin with Three.js implementation
     assistance from Claude Opus 5.5. This source code is released on GitHub under the <a href="https://opensource.org/license/mit">MIT License</a>.
+    <br>
+    This work is created as part of the final project for UCSB's <a href="https://catalog.ucsb.edu/courses/MATH%20145/general-aoYks">MATH 145 - Introduction to Topology</a> in Fall 2026.
+    Group Member:  
   </div>
   </div>
 </body>
