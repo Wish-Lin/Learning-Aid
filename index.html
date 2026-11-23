@@ -18,21 +18,22 @@
   </script>
   <!-- Can't externalize the JS cause otherwise it can't be tested locally without server due to CORS -->
   <script type="module"> 
+    // Import Three.js and orbit control
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-    const torusView = document.getElementById('torus-view');
-
     // Renderer: canvas is inside #torus-view
+    const torusView = document.getElementById('torus-view');
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     torusView.appendChild(renderer.domElement);
 
-    // 2D canvas: the source of truth. The torus texture reads from it.
+    // 2D canvas: This is where user edits and the torus texture reads from it.
     const flatView = document.getElementById('flat-view');
     const flatCanvas = document.createElement('canvas');
-    flatCanvas.width = 1024;  // drawing resolution, independent of on-screen size
-    flatCanvas.height = 1024;
+    // canvas resolution, independent of on-screen size
+    flatCanvas.width = 1200; 
+    flatCanvas.height = 1200;
     flatView.appendChild(flatCanvas);
     const ctx = flatCanvas.getContext('2d');
 
@@ -41,30 +42,116 @@
     texture.colorSpace = THREE.SRGBColorSpace; // colors on the torus match the 2D view
     texture.anisotropy = renderer.capabilities.getMaxAnisotropy(); // sharper at grazing angles
 
-    // Placeholder drawing: a grid plus a moving dot, only to show the sync works.
-    function drawFlat(t) {
-      const W = flatCanvas.width, H = flatCanvas.height;
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, W, H);
+    // ------------ Actual canvas code --------------------
 
-      const n = 12; // n x n grid
-      ctx.strokeStyle = '#888888';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      for (let k = 0; k <= n; k++) {
-        const x = k * W / n, y = k * H / n;
-        ctx.moveTo(x, 0); ctx.lineTo(x, H);
-        ctx.moveTo(0, y); ctx.lineTo(W, y);
+    // Grid size: 12x12 looped back onto itself. I think it is a good amount, noo too many and not too few.
+    // 2D matrices that record the state of the face, edges and vertices.
+
+    // Faces, 12 rows * 12 columns = 144 elements
+    let matrix2 = []; 
+
+    // Edges, two times the amount of faces. I decide to interpret it as 24 rows and 12 colums, though the
+    // opposite is also valid
+    let matrix1 = [];  
+
+    // Vertices, top left corner of each square
+    let matrix0 = []; 
+
+    // Init matrix2 and matrix0
+    for (let i = 0; i < 12; i++) {
+      matrix2[i] = [];
+      matrix0[i] = [];
+      for (let j = 0; j < 12; j++) {
+        matrix2[i][j] = 0;
+        matrix0[i][j] = 0;
       }
-      ctx.stroke();
+    }
 
-      ctx.fillStyle = '#d33';
-      ctx.beginPath();
-      ctx.arc((t * 0.10) % W, (t * 0.04) % H, 12, 0, 2 * Math.PI);
-      ctx.fill();
+    // Init matrix1
+    for (let i = 0; i < 24; i++) {
+      matrix1[i] = [];
+      for (let j = 0; j < 12; j++) {
+        matrix1[i][j] = 0;
+      }
+    }
+
+
+    // ------------ Actual canvas code --------------------
+    // The function redraws the whole canvas whenever something needs to change
+    function redraw() {
+      // Draw a white background
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, 1200, 1200);
+
+      // Note: By target appearance we need vertices to be drawn AFTER the edges.
+
+      // Draw the squares.
+      // 0 = draw nothing, 1 = draw yellow square slightly smaller than it
+      const n = 12;             // n x n grid
+      const gap = 10;           // px
+      ctx.fillStyle = "moccasin"
+
+      for (let i = 0; i < 12; i++) {
+        for (let j = 0; j < 12; j++) {
+          if(matrix2[i][j]) {
+            ctx.fillRect(100*j + gap, 100*i + gap, 100 - gap*2, 100 - gap*2);
+          }
+        }
+      }
+
+      // Draw the vertices.
+      // 0 = draw gray dot, 1 = draw golden dot
+      matrix0[0][0] = 1;
+      const dotRadius = 12;
+
+      for (let i = 0; i < 12; i++) {
+        for (let j = 0; j < 12; j++) {
+          ctx.beginPath();
+
+          // Draw the dots, dots on the boundary need extra care
+          ctx.arc(j * 100, i * 100, dotRadius, 0, Math.PI * 2); // Every point gets one of this
+          if (i == 0 && j != 0) { // Top row, draw one more point, both only gets half of them drawn
+            ctx.moveTo(j * 100 + dotRadius, 1200);
+            ctx.arc(j * 100, 1200, dotRadius, 0, Math.PI * 2);
+          }
+          if (i != 0 && j == 0) { // Left row, draw one more point, both only gets half of them drawn
+            ctx.moveTo(1200 + dotRadius, i * 100);
+            ctx.arc(1200, i * 100, dotRadius, 0, Math.PI * 2);
+          }
+          if (i == 0 && j == 0) { // Top left point, draw three more point, each only gets a quarter drawn
+            ctx.moveTo(1200 + dotRadius, 0);
+            ctx.arc(1200, 0, dotRadius, 0, Math.PI * 2);
+            ctx.moveTo(dotRadius, 1200);
+            ctx.arc(0, 1200, dotRadius, 0, Math.PI * 2);
+            ctx.moveTo(1200 + dotRadius, 1200);
+            ctx.arc(1200, 1200, dotRadius, 0, Math.PI * 2);
+          }
+
+          // Change to gold only when the corresponding matrix element is true, else lightgray
+          ctx.fillStyle = matrix0[i][j] ? "gold" : "lightgray";
+          ctx.fill();
+        }
+      }
+      
+      // ctx.strokeStyle = '#888888';
+      // ctx.lineWidth = 2;
+      // ctx.beginPath();
+      // for (let k = 0; k <= n; k++) {
+      //   const x = k * W / n, y = k * H / n;
+      //   ctx.moveTo(x, 0); ctx.lineTo(x, H);
+      //   ctx.moveTo(0, y); ctx.lineTo(W, y);
+      // }
+      // ctx.stroke();
+
+      // ctx.fillStyle = '#d33';
+      // ctx.beginPath();
+      // ctx.arc((t * 0.10) % W, (t * 0.04) % H, 12, 0, 2 * Math.PI);
+      // ctx.fill();
 
       texture.needsUpdate = true; // the sync: push the new pixels to the GPU
     }
+
+    redraw();
 
     // Scene + camera
     const scene = new THREE.Scene();
@@ -100,8 +187,7 @@
     }).observe(torusView);
 
     // Render loop in browser
-    renderer.setAnimationLoop((time) => {
-      drawFlat(time);
+    renderer.setAnimationLoop(() => {
       controls.update();
       renderer.render(scene, camera);
     });
