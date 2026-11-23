@@ -51,7 +51,7 @@
     let matrix2 = []; 
 
     // Edges, two times the amount of faces. I decide to interpret it as 24 rows and 12 colums, though the
-    // opposite is also valid
+    // opposite is also a valid description
     let matrix1 = [];  
 
     // Vertices, top left corner of each square
@@ -86,7 +86,6 @@
     matrix2[5][8] = 1;
     matrix2[6][8] = 1;
 
-    // ------------ Actual canvas code --------------------
     // The function redraws the whole canvas whenever something needs to change
     function redraw() {
       // Draw a white background
@@ -192,6 +191,32 @@
       texture.needsUpdate = true; // the sync: push the new pixels to the GPU
     }
 
+    // Event listener that deals with canvas clicks, which is user inputing errors manually
+
+    const closeCutoff = 10; // Can change later
+    // Small helper functions
+    const onLine = x => (x + closeCutoff) % 100 <= closeCutoff * 2;
+    const roundTo100 = x => Math.round(x / 100) * 100;
+    const roundToMid100 = x => Math.round((x - 50) / 100) * 100 + 50;
+
+    flatCanvas.addEventListener("click", (event) => {
+      // Get coordinate of the clicked position. x and y are what we want
+      const rect = flatCanvas.getBoundingClientRect();
+      const scaleX = flatCanvas.width / rect.width;
+      const scaleY = flatCanvas.height / rect.height;
+      const x = (event.clientX - rect.left) * scaleX;
+      const y = (event.clientY - rect.top) * scaleY;
+
+      if (onLine(x) && !onLine(y)) { // If on a vertical edge
+        console.log(x);
+        console.log(y);
+        console.log(roundTo100(x));
+        console.log(roundToMid100(y));
+      } 
+    });
+
+    // ------------ Actual canvas code --------------------
+
     redraw();
 
     // Scene + camera
@@ -238,6 +263,15 @@
   <div id="stage">
     <div id="banner" class="textdisplay">Lorem ipsum</div>
     <div id="flat-view"></div>
+    <div id="flat-description">
+      The qubits are located on the edges. Click on edges to add or remove errors manually.
+      <br><br>
+      Error type:
+      <select id="error-type-select">
+        <option value="X" selected>X error</option>
+        <option value="Z">Z error</option>
+      </select>
+    </div>
     <div id="torus-view"></div>
     <div id="torus-description">
     This is an interactive torus implemented using <a href="https://threejs.org/">Three.js</a>.
@@ -246,13 +280,20 @@
       <span style="color: green">green</span> = Y axis and
       <span style="color: blue">blue</span> = Z axis.
     </div>
-    <div id="footer" class="textdisplay">Demo made by Wei-Hsu Lin with Three.js implementation
-    assistance from Claude Opus 5.5. Source code is released on GitHub under the <a href="https://opensource.org/license/mit">MIT License</a>.
-    <br>
-    This work is created as part of the final project for UCSB's <a href="https://catalog.ucsb.edu/courses/MATH%20145/general-aoYks">MATH 145 - Introduction to Topology</a> in Fall 2026.
-    Group Member: Baipalm Tamajai, Cayden Morris, Minsoo Kim, Wei-Hsu Lin
-  </div>
-  <textarea id="console" spellcheck="false"></textarea>
+    <div id="footer" class="textdisplay">
+      Demo made by Wei-Hsu Lin with minor Three.js 
+      assistance from Claude Opus 5.5 on the 3D torus visualization.
+      Source code is released on GitHub under the
+      <a href="https://opensource.org/license/mit">MIT License</a>.
+      <br>
+      This work is created as part of the final project for UCSB's
+      <a href="https://catalog.ucsb.edu/courses/MATH%20145/general-aoYks">
+      MATH 145 - Introduction to Topology</a> in Fall 2026.
+      Group Member: Baipalm Tamajai, Cayden Morris, Minsoo Kim, Wei-Hsu Lin
+      <br>
+      ff
+    </div>
+    <textarea id="console" spellcheck="false"></textarea>
   </div>
 </body>
 </html>
