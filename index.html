@@ -75,6 +75,16 @@
       }
     }
 
+    // Demo of X error
+    matrix1[11][5] = 1;
+    matrix0[6][5] = 1;
+    matrix0[5][5] = 1;
+
+    // Demo of Z error
+
+    matrix1[12][8] = 2;
+    matrix2[5][8] = 1;
+    matrix2[6][8] = 1;
 
     // ------------ Actual canvas code --------------------
     // The function redraws the whole canvas whenever something needs to change
@@ -88,8 +98,8 @@
       // Draw the squares.
       // 0 = draw nothing, 1 = draw yellow square slightly smaller than it
       const n = 12;             // n x n grid
-      const gap = 10;           // px
-      ctx.fillStyle = "moccasin"
+      const gap = 15;           // px
+      ctx.fillStyle = "gold";
 
       for (let i = 0; i < 12; i++) {
         for (let j = 0; j < 12; j++) {
@@ -104,8 +114,6 @@
       // 3 = draw green line (X+Z error). This allows me to use 1+2=3 in assignment later.
       ctx.lineWidth = 8;
       ctx.lineCap = "round"; // Doesn't really matter as thet get covered by the vertices
-
-      matrix1[3][3] = 1;
 
       for (let i = 0; i < 24; i++) {
         for (let j = 0; j < 12; j++) {
@@ -150,7 +158,6 @@
 
       // Draw the vertices.
       // 0 = draw gray dot, 1 = draw golden dot
-      matrix0[0][0] = 1;
       const dotRadius = 12;
 
       for (let i = 0; i < 12; i++) {
@@ -240,11 +247,12 @@
       <span style="color: blue">blue</span> = Z axis.
     </div>
     <div id="footer" class="textdisplay">Demo made by Wei-Hsu Lin with Three.js implementation
-    assistance from Claude Opus 5.5. This source code is released on GitHub under the <a href="https://opensource.org/license/mit">MIT License</a>.
+    assistance from Claude Opus 5.5. Source code is released on GitHub under the <a href="https://opensource.org/license/mit">MIT License</a>.
     <br>
     This work is created as part of the final project for UCSB's <a href="https://catalog.ucsb.edu/courses/MATH%20145/general-aoYks">MATH 145 - Introduction to Topology</a> in Fall 2026.
-    Group Member:  
+    Group Member: Baipalm Tamajai, Cayden Morris, Minsoo Kim, Wei-Hsu Lin
   </div>
+  <textarea id="console" spellcheck="false"></textarea>
   </div>
 </body>
 </html>

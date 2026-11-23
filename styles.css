@@ -3,34 +3,36 @@
 /* Copyright (c) 2026 Wei-Hsu Lin */
 
 :root {
-    --margin: 80px;
+  --margin: 80px;
 }
 html, body {
-    margin: 0;
-    height: 100%;
+  margin: 0;
+  height: 100%;
+}
+body {
+  background-image: url("cairo-tiling.png");
+  background-repeat: repeat;
+  background-size: 3rem 3rem; /* same as source size */
 }
 #stage { /* Centered region on screen, with a constant margin */
-    position: fixed;
-    inset: var(--margin);
-    display: grid;
-    /* background: #da2f2f; */
-    
-    /* Creates a 12x12 grid for placement */
-    grid-template-columns: repeat(12, minmax(0, 1fr)); 
-    grid-template-rows: repeat(12, minmax(0, 1fr));
-    gap: 0;
+  position: fixed;
+  inset: var(--margin);
+  display: grid;
+  background: #ffffff;
+  outline: 20px solid #ffffff; /* Add a visual-only margin */
+
+  /* Adds a fuzz if preferred */
+  /* box-shadow: 0 0 30px 15px #ffffff; */
+  
+  /* Creates a 12x12 grid for placement */
+  grid-template-columns: repeat(12, minmax(0, 1fr)); 
+  grid-template-rows: repeat(12, minmax(0, 1fr));
+  gap: 0;
 }
 #stage > * { /* Basically the container divs */
-    min-width: 0;
-    min-height: 0;
-    overflow: hidden; /* prevent content from pushing the cell */
-}
-
-/* Centered plain text */
-.banner {
-  display: grid;
-  place-items: center;
-  font-family: sans-serif;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden; /* prevent content from pushing the cell */
 }
 
 /* Set position of each subwindow */
@@ -39,6 +41,9 @@ html, body {
 #banner {
   grid-column: 1 / 7;
   grid-row: 1 / 2;
+  display: grid;
+  place-items: center;
+  font-family: sans-serif;
 }
 
 /* left to bottom-left: columns 9-12, rows 1-7 */
@@ -46,6 +51,7 @@ html, body {
   grid-column: 1 / 7;
   grid-row: 2 / 12;
   background: #eee;
+  padding: 20px;
   border: 2px solid #000; /* border but visual only */
 }
 
@@ -60,17 +66,22 @@ html, body {
 /* Description under the torus */
 #torus-description {
   grid-column: 9 / 13;
-  grid-row: 8 / 11;
+  grid-row: 8 / 10;
 }
 
+/* Small textarea "console" */
+#console {
+  grid-column: 9 / 13;
+  grid-row: 10 / 12;
+  border: 2px solid #000; /* border but visual only */
+  box-sizing: border-box;
+}
 
 /* Footer, displayed project info */
 #footer {
   grid-column: 1 / 13;
   grid-row: 12 / 13;
 }
-
-
 
 /* Canvas of Three.js, draws the torus */
 #torus-view canvas {
