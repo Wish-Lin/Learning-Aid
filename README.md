@@ -1,6 +1,10 @@
-## To be written
+# Purpose:
 
-To be written by our team
+This repository houses the learning aid for the Math 145 group project.  The code was written by Wish Lin.  The final product demonstrates the Toric Code in a visual, interactive style. 
+
+# Structure:
+
+The website (`index.html`) can be viewed at: [https://wish-lin.github.io/Learning-Aid/](https://wish-lin.github.io/Learning-Aid/).  
 
 ## Declaration of LLM use
 
