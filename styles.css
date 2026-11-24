@@ -8,6 +8,10 @@
 html, body {
   margin: 0;
   height: 100%;
+  /* Added to resolve problem of Chromium using Liberation Serif and Firefox using Noto */
+  /* serif on my laptop. I like Chromium's look more so this suggests all systems to use */
+  /* Times New Roman or its lookalike */
+  font-family: "Times New Roman", Times, serif; 
 }
 body {
   background-image: url("cairo-tiling.png");
@@ -63,6 +67,13 @@ body {
   grid-column: 7 / 9;
   grid-row: 2 / 12;
   padding-inline: 3px; /* Give a little space on left and right */
+}
+
+/* Input sliders for X and Z error density during random fill */
+.density-range {
+  width: 40%;
+  /* Make it sit flush with text inline with it. Default is "baseline" with is too high */
+  vertical-align: middle; 
 }
 
 /* top-right: columns 9-12, rows 1-7 */

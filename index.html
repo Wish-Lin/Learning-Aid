@@ -44,17 +44,17 @@
 
     // --------------- Console code -----------------------
 
-    let console = document.querySelector("#console");
+    let myConsole = document.querySelector("#console");
 
     function consoleLog(str) {
       str = `${str}\n>> `;
-      console.value += str;
-      console.scrollTop = console.scrollHeight; // Scroll to bottom where the new line is added
+      myConsole.value += str;
+      myConsole.scrollTop = myConsole.scrollHeight; // Scroll to bottom where the new line is added
     }
 
     // Clear console outpyt when the button is clicked
     document.querySelector("#console-clearbtn").addEventListener("click", () => {
-      console.value = ">> ";
+      myConsole.value = ">> ";
     });
 
     // --------------- Console code -----------------------
@@ -90,17 +90,6 @@
         matrix1[i][j] = 0;
       }
     }
-
-    // Demo of X error
-    matrix1[11][5] = 1;
-    matrix0[6][5] = 1;
-    matrix0[5][5] = 1;
-
-    // Demo of Z error
-
-    matrix1[12][8] = 2;
-    matrix2[5][8] = 1;
-    matrix2[6][8] = 1;
 
     // The function redraws the whole canvas whenever something needs to change
     function redrawCanvas2D() {
@@ -309,9 +298,103 @@
       redrawCanvas2D();
     });
 
+    // Clear everything on 2D grid
+    function clear2DGrid(redraw) {
+      // A nice trick that works for fixed size 2D arrays
+      matrix0.forEach(row => row.fill(0)); 
+      matrix1.forEach(row => row.fill(0)); 
+      matrix2.forEach(row => row.fill(0)); 
+
+      // Quick parameter to decide whether to redraw or not. When called during random fill don't redraw
+      // as it is only an intermediate step, when called from the button then redraw.
+      if (redraw) {
+        redrawCanvas2D();
+        consoleLog("All errors cleared");
+      }
+    }
+
+    // Random error infill
+
+    // A simple function that generates random X and Z errors at specified density.
+    // Returns an array of coordinates and error state, including the X+Z state
+    // 1 = X, 2 = Z, 3 = X+Z
+    function randomErrors(p1, p2) {
+      const errors = [];
+      for (let i = 0; i < 24; i++) {
+        for (let j = 0; j < 12; j++) {
+          const a = Math.random() < p1;
+          const b = Math.random() < p2;
+          if (a || b) {
+            const state = a && b ? 3 : a ? 1 : 2;
+            errors.push([i, j, state]);
+          }
+        }
+      }
+      return errors;
+    }
+
+    // Live update small <span> next to X and Z density sliders
+    document.querySelector("#x-density").addEventListener("input", (event) => {
+      const val = Number(event.target.value); 
+      document.querySelector("#x-density-disp").textContent = Math.round(val*100);
+    });
+    document.querySelector("#z-density").addEventListener("input", (event) => {
+      const val = Number(event.target.value); 
+      document.querySelector("#z-density-disp").textContent = Math.round(val*100);
+    });
+
+    document.querySelector("#randfill-btn").addEventListener("click", () => {
+      // Read two slider values and generate error list
+      const p1 = document.querySelector("#x-density").value;
+      const p2 = document.querySelector("#z-density").value;
+      const errors = randomErrors(p1, p2);
+
+      // Count number of each error type
+      let xCount = 0, zCount = 0, xzCount = 0;
+
+      // Clear grid first
+      clear2DGrid(false);
+
+      // Process the cells one by one
+      for (const errorInfo of errors) {
+        // First write error state to that edge
+        const [i, j, errorType] = errorInfo;
+        matrix1[i][j] = errorType;
+
+        // Then deal with the associated vertices/faces too, plus tally them
+        switch (errorType) {
+          case 1:
+            toggleXExcitation(i,j);
+            xCount++;
+            break;
+          case 2:
+            toggleZExcitation(i,j);
+            zCount++;
+            break;
+          case 3:
+            toggleXExcitation(i,j);
+            toggleZExcitation(i,j);
+            xzCount++;
+            break;
+        }
+      }
+
+      // Log the details of this randfill to console
+      consoleLog(`Randfill with error density X = ${p1}, Z = ${p2}`);
+      consoleLog(`Added ${xCount} X errors, ${zCount} Z errors, ${xzCount} X+Z errors`);
+
+      // Finally, redraw canvas to display all the changes
+      redrawCanvas2D();
+    });
+
+    document.querySelector("#clear-canvas-btn").addEventListener("click", () => {
+      clear2DGrid(true);
+    });
+
     // ------------ Actual canvas code --------------------
 
-    redrawCanvas2D();
+    // On page load random fill once
+    document.querySelector("#randfill-btn").click();
 
     // Scene + camera
     const scene = new THREE.Scene();
@@ -358,13 +441,29 @@
     <div id="banner" class="textdisplay">Lorem ipsum</div>
     <div id="flat-view"></div>
     <div id="flat-description">
-      The qubits are located on the edges. Click on edges to add or remove errors manually.
+      The qubits are located on the edges. Edges are colored by error type:
+      <span style="color: indianred">red</span> for X,
+      <span style="color: royalblue">blue</span> for Z,
+      and <span style="color: seagreen">green</span> for both.
       <br><br>
-      Error type:
+      Manual: Click on edges to add or remove
       <select id="error-type-select">
         <option value="X" selected>X error</option>
         <option value="Z">Z error</option>
       </select>
+      <br><br>
+      X error: <input type="range" id="x-density" class="density-range" min="0" max="1" value="0.05" step="0.01"/>
+      <span id="x-density-disp">5</span>%
+      <br>
+      Z error: <input type="range" id="z-density" class="density-range" min="0" max="1" value="0.05" step="0.01"/>
+      <span id="z-density-disp">5</span>%
+      <br>
+      <button id="randfill-btn">Random Fill</button>
+      <button id="clear-canvas-btn">Clear All</button>
+      <br><br>
+      Edges are colored by error type: <span style="color: indianred">red</span> for X,
+      <span style="color: royalblue">blue</span> for Z,
+      and <span style="color: seagreen">green</span> for both.
     </div>
     <div id="torus-view"></div>
     <div id="torus-description">
