@@ -6,8 +6,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Page Title</title>
+  <title>Surface Code</title>
   <link rel="stylesheet" href="styles.css" />
+
+  <!-- edmonds-blossom is CommonJS and uses undeclared variables, so it must run as a classic (non-strict) script -->
+  <script>var module = {};</script>
+  <script src="https://cdn.jsdelivr.net/npm/edmonds-blossom@1.0.0/app/blossom.js"></script>
+  <script>var blossom = module.exports;</script>
+
   <script type="importmap">
   {
     "imports": {
@@ -91,6 +97,9 @@
       }
     }
 
+    // A toggle that determines whether only the logical operator (or more generally loops) edges are drawn
+    let drawLoopsOnly = false;
+
     // The function redraws the whole canvas whenever something needs to change
     function redrawCanvas2D() {
       // Draw a white background
@@ -103,7 +112,7 @@
       // 0 = draw nothing, 1 = draw yellow square slightly smaller than it
       const n = 12;             // n x n grid
       const gap = 15;           // px
-      ctx.fillStyle = "gold";
+      ctx.fillStyle = drawLoopsOnly ? "transparent" : "gold";
 
       for (let i = 0; i < 12; i++) {
         for (let j = 0; j < 12; j++) {
@@ -117,7 +126,7 @@
       // 0 = draw gray line, 1 = draw red line (X error), 2 = draw blue line (Z error),
       // 3 = draw green line (X+Z error).
       ctx.lineWidth = 8;
-      ctx.lineCap = "round"; // Doesn't really matter as thet get covered by the vertices
+      ctx.lineCap = "round"; // Only visible when drawLoopsOnly is active, but looks very nice
 
       for (let i = 0; i < 24; i++) {
         for (let j = 0; j < 12; j++) {
@@ -144,7 +153,7 @@
           // Decide what color to use
           switch (matrix1[i][j]) {
             case 0:
-              ctx.strokeStyle = "gray";
+              ctx.strokeStyle = drawLoopsOnly ? "transparent" : "gray";
               break;
             case 1:
               ctx.strokeStyle = "indianred";
@@ -188,7 +197,7 @@
           }
 
           // Change to gold only when the corresponding matrix element is true, else lightgray
-          ctx.fillStyle = matrix0[i][j] ? "gold" : "lightgray";
+          ctx.fillStyle = drawLoopsOnly ? "transparent" : (matrix0[i][j] ? "gold" : "lightgray");
           ctx.fill();
         }
       }
@@ -218,7 +227,7 @@
       }
     }
 
-    // For a given edge, dp XOR on its two adjacent faces 
+    // For a given edge, do XOR on its two adjacent faces 
     function toggleZExcitation(i, j) {
       if (i % 2) { // Vertical Edge
         matrix2[(i - 1) / 2][trueMod(j - 1, 12)] ^= 1; // Deals with left out of bound
@@ -393,6 +402,102 @@
 
     // ------------ Actual canvas code --------------------
 
+    // ----- Blossom algorithm (Claude Opus 5.5) ----------
+
+    // Minimum-weight perfect matching decoder (Blossom algorithm).
+    // Reads the syndrome in matrix0 (vertices) and matrix2 (plaquettes), flips the
+    // chosen edges in matrix1, and leaves matrix0 and matrix2 all zero.
+    // X (vertex) and Z (plaquette) problems are solved independently.
+    function decodeAndCorrect() {
+      // Signed shortest step on a 12-cycle, in -5..6 (a tie at 6 always goes +6)
+      const step = (from, to) => {
+        const d = trueMod(to - from, 12);
+        return d > 6 ? d - 12 : d;
+      };
+
+      // Pair lit cells of mat with minimum total torus Manhattan distance.
+      // The library maximizes weight, so weight = 100 - distance; maxCardinality = true
+      // forces a perfect matching, making this the same as minimizing total distance.
+      function match(mat) {
+        const defects = [];
+        for (let r = 0; r < 12; r++)
+          for (let c = 0; c < 12; c++)
+            if (mat[r][c]) defects.push([r, c]);
+        if (defects.length === 0) return [];
+
+        const edges = [];
+        for (let a = 0; a < defects.length; a++)
+          for (let b = a + 1; b < defects.length; b++) {
+            const [r1, c1] = defects[a], [r2, c2] = defects[b];
+            const dist = Math.abs(step(r1, r2)) + Math.abs(step(c1, c2));
+            edges.push([a, b, 100 - dist]);
+          }
+
+        const mate = blossom(edges, true); // mate[a] = index of a's partner
+        const pairs = [];
+        for (let a = 0; a < defects.length; a++)
+          if (a < mate[a]) pairs.push([defects[a], defects[mate[a]]]);
+        return pairs;
+      }
+
+      // X correction: walk between paired vertices along edges (horizontal, then vertical)
+      for (let [[r, c], [r2, c2]] of match(matrix0)) {
+        const dc = step(c, c2), dr = step(r, r2);
+        for (let k = 0; k < Math.abs(dc); k++) {
+          if (dc < 0) c = trueMod(c - 1, 12);
+          matrix1[2*r][c] ^= 1;          // horizontal edge
+          toggleXExcitation(2*r, c);
+          if (dc > 0) c = (c + 1) % 12;
+        }
+        for (let k = 0; k < Math.abs(dr); k++) {
+          if (dr < 0) r = trueMod(r - 1, 12);
+          matrix1[2*r + 1][c] ^= 1;      // vertical edge
+          toggleXExcitation(2*r + 1, c);
+          if (dr > 0) r = (r + 1) % 12;
+        }
+      }
+
+      // Z correction: walk between paired plaquettes on the dual lattice, crossing one edge per step
+      for (let [[r, c], [r2, c2]] of match(matrix2)) {
+        const dc = step(c, c2), dr = step(r, r2);
+        for (let k = 0; k < Math.abs(dc); k++) {
+          if (dc > 0) c = (c + 1) % 12;
+          matrix1[2*r + 1][c] ^= 2;      // vertical edge crossed
+          toggleZExcitation(2*r + 1, c);
+          if (dc < 0) c = trueMod(c - 1, 12);
+        }
+        for (let k = 0; k < Math.abs(dr); k++) {
+          if (dr > 0) r = (r + 1) % 12;
+          matrix1[2*r][c] ^= 2;          // horizontal edge crossed
+          toggleZExcitation(2*r, c);
+          if (dr < 0) r = trueMod(r - 1, 12);
+        }
+      }
+    }
+
+    // Press to decode using blossom algorithm
+    document.querySelector("#decode-btn").addEventListener("click", () => {
+      decodeAndCorrect();
+      redrawCanvas2D();
+      consoleLog("Blossom alogirthm applied");
+    });
+
+    // Toggle whether only the loop edges are drawn
+    document.querySelector("#looponly-btn").addEventListener("click", (event) => {
+      if (drawLoopsOnly) {
+        drawLoopsOnly = false;
+        event.target.textContent = "Show Loops Only";
+        consoleLog("Display restored");
+      } else {
+        drawLoopsOnly = true;
+        event.target.textContent = "Restore Default";
+        consoleLog("Display change: Only loop edges are now visible");
+      }
+      redrawCanvas2D();
+    });
+
+    // ----- Blossom algorithm (Claude Opus 5.5) ---------- 
+
     // On page load random fill once
     document.querySelector("#randfill-btn").click();
 
@@ -438,13 +543,17 @@
 </head>
 <body>
   <div id="stage">
-    <div id="banner" class="textdisplay">Lorem ipsum</div>
+    <div id="banner" class="textdisplay">Surface Code Interactive 2D/3D Visualization</div>
     <div id="flat-view"></div>
     <div id="flat-description">
-      The qubits are located on the edges. Edges are colored by error type:
+      The qubits are located on the <i>edges</i>, which are colored by error type:
+      <span style="color: gray">gray</span> for no error,
       <span style="color: indianred">red</span> for X,
       <span style="color: royalblue">blue</span> for Z,
       and <span style="color: seagreen">green</span> for both.
+      <br><br>
+      The vertex and plaquette excitations appear at the boundary of error paths and are colored in
+      <span style="color: gold">gold</span>.
       <br><br>
       Manual: Click on edges to add or remove
       <select id="error-type-select">
@@ -452,6 +561,8 @@
         <option value="Z">Z error</option>
       </select>
       <br><br>
+      Random fill errors:
+      <br>
       X error: <input type="range" id="x-density" class="density-range" min="0" max="1" value="0.05" step="0.01"/>
       <span id="x-density-disp">5</span>%
       <br>
@@ -459,11 +570,16 @@
       <span id="z-density-disp">5</span>%
       <br>
       <button id="randfill-btn">Random Fill</button>
-      <button id="clear-canvas-btn">Clear All</button>
+      <button id="clear-canvas-btn">Clear All Errors</button>
       <br><br>
-      Edges are colored by error type: <span style="color: indianred">red</span> for X,
-      <span style="color: royalblue">blue</span> for Z,
-      and <span style="color: seagreen">green</span> for both.
+      The standard surface-code decoder is 
+      Minimum-Weight Perfect Matching (MWPM),
+      which pairs up syndrome defects with the lowest total path cost. This demo uses
+      <a href="https://en.wikipedia.org/wiki/Blossom_algorithm">Edmonds' blossom algorithm</a>
+      to solve it.
+      <br><br>
+      <button id="decode-btn">Decode</button>
+      <button id="looponly-btn">Show Loops Only</button>
     </div>
     <div id="torus-view"></div>
     <div id="torus-description">
@@ -478,8 +594,8 @@
     </div>
     <textarea id="console" spellcheck="false" readonly>>> </textarea>
     <div id="footer" class="textdisplay">
-      Demo made by Wei-Hsu Lin with minor Three.js 
-      assistance from Claude Opus 5.5 on the 3D torus visualization.
+      Demo made by Wei-Hsu Lin with assistance from Claude Opus 5.5
+      on 3D torus visualization and the blossom algorithm.
       Source code is released on GitHub under the
       <a href="https://opensource.org/license/mit">MIT License</a>.
       <br>
@@ -488,7 +604,10 @@
       MATH 145 - Introduction to Topology</a> in Fall 2026.
       Group Member: Baipalm Tamajai, Cayden Morris, Minsoo Kim, Wei-Hsu Lin
       <br>
-      ff
+      This work's visualization scheme is heavily inspired by
+      <a href="https://arthurpesah.me/blog/2023-05-13-surface-code/">this blog post</a>
+      by Arthur Pesah. While the visual style is similar, the implementation is entirely
+      independent and built from scratch using JavaScript and HTML5.
     </div>
   </div>
 </body>
