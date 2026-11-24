@@ -77,6 +77,21 @@ body {
 #torus-description {
   grid-column: 9 / 13;
   grid-row: 8 / 10;
+  position: relative;
+}
+
+/* Small textlabel at bottom left of torus-description */
+#console-title {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+}
+
+/* Small button at bottom right of torus-description */
+#console-clearbtn {
+  position: absolute;
+  right: 0;
+  bottom: 0;
 }
 
 /* Small textarea "console" */
@@ -85,6 +100,8 @@ body {
   grid-row: 10 / 12;
   border: 2px solid #000;
   box-sizing: border-box;
+  font-family: monospace;
+  overflow-y: auto;
 }
 
 /* Footer, displayed project info */

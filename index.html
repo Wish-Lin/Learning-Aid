@@ -42,6 +42,22 @@
     texture.colorSpace = THREE.SRGBColorSpace; // colors on the torus match the 2D view
     texture.anisotropy = renderer.capabilities.getMaxAnisotropy(); // sharper at grazing angles
 
+    // --------------- Console code -----------------------
+
+    let console = document.querySelector("#console");
+
+    function consoleLog(str) {
+      str = `${str}\n>> `;
+      console.value += str;
+      console.scrollTop = console.scrollHeight; // Scroll to bottom where the new line is added
+    }
+
+    // Clear console outpyt when the button is clicked
+    document.querySelector("#console-clearbtn").addEventListener("click", () => {
+      console.value = ">> ";
+    });
+
+    // --------------- Console code -----------------------
     // ------------ Actual canvas code --------------------
 
     // Grid size: 12x12 looped back onto itself. I think it is a good amount, noo too many and not too few.
@@ -87,7 +103,7 @@
     matrix2[6][8] = 1;
 
     // The function redraws the whole canvas whenever something needs to change
-    function redraw() {
+    function redrawCanvas2D() {
       // Draw a white background
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, 1200, 1200);
@@ -251,46 +267,51 @@
         case 0: // Unselected, add error
           if (errorMode == "X") {
             matrix1[i][j] = 1;
-            toggleXExcitation(i,j);
+            consoleLog(`X error added to edge (${i}, ${j})`);
           } else {
             matrix1[i][j] = 2;
-            toggleZExcitation(i,j);
+            consoleLog(`Z error added to edge (${i}, ${j})`);
           }
           break;
         case 1: // X error present, remove error in X mode and add Z error in Z mode
           if (errorMode == "X") {
             matrix1[i][j] = 0;
-            toggleXExcitation(i,j);
+            consoleLog(`X error removed from edge (${i}, ${j})`);
           } else {
             matrix1[i][j] = 3;
-            toggleZExcitation(i,j);
+            consoleLog(`Z error added to edge (${i}, ${j})`);
           }
           break;
         case 2: // Z error present, remove error in Z mode and add X error in Z mode
           if (errorMode == "X") {
             matrix1[i][j] = 3;
-            toggleXExcitation(i,j);
+            consoleLog(`X error added to edge (${i}, ${j})`);
           } else {
             matrix1[i][j] = 0;
-            toggleZExcitation(i,j);
+            consoleLog(`Z error removed from edge (${i}, ${j})`);
           }
           break;
         case 3: // Both X and Z error present, remove error of the current mode
           if (errorMode == "X") {
             matrix1[i][j] = 2;
-            toggleXExcitation(i,j);
+            consoleLog(`X error removed from edge (${i}, ${j})`);
           } else {
             matrix1[i][j] = 1;
-            toggleZExcitation(i,j);
+            consoleLog(`Z error removed from edge (${i}, ${j})`);
           }
           break;
       }
-      redraw();
+
+      // Toggle the associated vertices/faces depending on error mode
+      errorMode == "X" ? toggleXExcitation(i,j) : toggleZExcitation(i,j);
+
+      // Finally, redraw canvas to display all the changes
+      redrawCanvas2D();
     });
 
     // ------------ Actual canvas code --------------------
 
-    redraw();
+    redrawCanvas2D();
 
     // Scene + camera
     const scene = new THREE.Scene();
@@ -352,7 +373,11 @@
       <span style="color: red">red</span> = X axis,
       <span style="color: green">green</span> = Y axis and
       <span style="color: blue">blue</span> = Z axis.
+
+      <div id="console-title">Status Console</div>
+      <button id="console-clearbtn">Clear Output</button>
     </div>
+    <textarea id="console" spellcheck="false" readonly>>> </textarea>
     <div id="footer" class="textdisplay">
       Demo made by Wei-Hsu Lin with minor Three.js 
       assistance from Claude Opus 5.5 on the 3D torus visualization.
@@ -366,7 +391,6 @@
       <br>
       ff
     </div>
-    <textarea id="console" spellcheck="false"></textarea>
   </div>
 </body>
 </html>
