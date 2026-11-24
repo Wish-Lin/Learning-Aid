@@ -3,7 +3,7 @@
 /* Copyright (c) 2026 Wei-Hsu Lin */
 
 :root {
-  --margin: 80px;
+  --margin: 50px;
 }
 html, body {
   margin: 0;
@@ -89,6 +89,7 @@ body {
   grid-column: 9 / 13;
   grid-row: 8 / 10;
   position: relative;
+  padding-block: 3px; /* Give a little space on top and bottom */
 }
 
 /* Small textlabel at bottom left of torus-description */
