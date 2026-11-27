@@ -3,7 +3,8 @@
 /* Copyright (c) 2026 Wei-Hsu Lin */
 
 :root {
-  --margin: 50px;
+  --margin: 60px;
+  font-size: 14px; /* Change definition of rem, made it a bit smaller */
 }
 html, body {
   margin: 0;
@@ -63,6 +64,11 @@ body {
   align-items: stretch; /* Default behavior, but explicit. Acts as height: 100% for child */
 }
 
+/* 2D Canvas that the user interacts with */
+#flat-view canvas {
+  aspect-ratio: 1 / 1; /* keep the square canvas square, letterboxed in the cell */
+}
+
 #flat-description {
   grid-column: 7 / 9;
   grid-row: 2 / 12;
@@ -82,6 +88,13 @@ body {
   grid-row: 1 / 8;
   background: #eee;
   border: 2px solid #000;
+}
+
+/* Canvas of Three.js, draws the torus */
+#torus-view canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 /* Description under the torus */
@@ -120,14 +133,6 @@ body {
 #footer {
   grid-column: 1 / 13;
   grid-row: 12 / 13;
-  font-size: 14px; /* 1rem is usually 16px */
   padding-top: 3px; /* Give a little space, otherwise the text are touching the border above */
-}
-
-/* Canvas of Three.js, draws the torus */
-#torus-view canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
 }
 

@@ -402,7 +402,8 @@
 
     // ------------ Actual canvas code --------------------
 
-    // ----- Blossom algorithm (Claude Opus 5.5) ----------
+    // ------------- Blossom algorithm --------------------
+    // ------------- (Claude Opus 5.5) --------------------
 
     // Minimum-weight perfect matching decoder (Blossom algorithm).
     // Reads the syndrome in matrix0 (vertices) and matrix2 (plaquettes), flips the
@@ -475,6 +476,8 @@
       }
     }
 
+    // ------------- (Claude Opus 5.5) --------------------
+
     // Press to decode using blossom algorithm
     document.querySelector("#decode-btn").addEventListener("click", () => {
       decodeAndCorrect();
@@ -496,7 +499,7 @@
       redrawCanvas2D();
     });
 
-    // ----- Blossom algorithm (Claude Opus 5.5) ---------- 
+    // ------------- Blossom algorithm --------------------
 
     // On page load random fill once
     document.querySelector("#randfill-btn").click();
