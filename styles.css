@@ -3,7 +3,7 @@
 /* Copyright (c) 2026 Wei-Hsu Lin */
 
 :root {
-  --margin: 60px;
+  --margin: 90px;
   font-size: 14px; /* Change definition of rem, made it a bit smaller */
 }
 html, body {
@@ -19,9 +19,15 @@ body {
   background-repeat: repeat;
   background-size: 3rem 3rem; /* same as source size */
 }
-#stage { /* Centered region on screen, with a constant margin */
+#stage { /* Centered region on screen, with a constant left/right margin + 2 : 1 aspect ratio */
   position: fixed;
-  inset: var(--margin);
+  left: var(--margin);
+  right: var(--margin);        /* left + right set leads to width set */
+  top: 50%;
+  translate: 0 -50%;           /* top + translate centers vertically */
+  aspect-ratio: 2 / 1;         
+  min-height: 0;               /* don't let content stretch the ratio */
+
   display: grid;
   background: ivory;
   outline: 20px solid ivory; /* Add a visual-only margin */
@@ -61,12 +67,12 @@ body {
   border: 2px solid #000;
   display: flex;
   justify-content: center;
-  align-items: stretch; /* Default behavior, but explicit. Acts as height: 100% for child */
 }
 
 /* 2D Canvas that the user interacts with */
 #flat-view canvas {
   aspect-ratio: 1 / 1; /* keep the square canvas square, letterboxed in the cell */
+  height: 100%;
 }
 
 #flat-description {
@@ -127,6 +133,7 @@ body {
   box-sizing: border-box;
   font-family: monospace;
   overflow-y: auto;
+  font-size: 0.8rem; /* Monospace fonts usually appear larger at same font size */
 }
 
 /* Footer, displayed project info */
