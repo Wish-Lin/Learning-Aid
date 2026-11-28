@@ -58,7 +58,7 @@
       myConsole.scrollTop = myConsole.scrollHeight; // Scroll to bottom where the new line is added
     }
 
-    // 
+    // Change CSS rem to user selected value 
     document.querySelector("#font-size-select").addEventListener("change", (event) => {
       document.documentElement.style.fontSize = `${event.target.value}px`;
     });
@@ -156,6 +156,7 @@
           }
 
           // Decide what color to use
+          // When drawLoopsOnly = true, normal edges are hidden and Z errors gets drawn on dual lattice instead.
           switch (matrix1[i][j]) {
             case 0:
               ctx.strokeStyle = drawLoopsOnly ? "transparent" : "gray";
@@ -164,13 +165,39 @@
               ctx.strokeStyle = "indianred";
               break;
             case 2:
-              ctx.strokeStyle = "royalblue";
+              ctx.strokeStyle = drawLoopsOnly ? "transparent" : "royalblue";
               break;
             case 3:
-              ctx.strokeStyle = "seagreen";
+              ctx.strokeStyle = drawLoopsOnly ? "indianred" : "seagreen";
               break;
           }
           ctx.stroke();
+
+          // If there is a Z error, draw on dual lattice when drawLoopsOnly = true
+          if (drawLoopsOnly && matrix1[i][j] >= 2) {
+            ctx.beginPath();
+
+            // Draw the edges, edges on the 2D boundary need extra care
+            if (i % 2) { // This is a vertical edge
+              ctx.moveTo(j*100 - 50, i*50);
+              ctx.lineTo(j*100 + 50, i*50);
+              if (j == 0) { // Left boundary, draw one more line, both only gets half of them drawn
+                ctx.moveTo(1150, i*50);
+                ctx.lineTo(1250, i*50);
+              }
+            }
+            else { // This is a horizontal edge
+              ctx.moveTo(j*100 + 50, (i-1)*50);
+              ctx.lineTo(j*100 + 50, (i+1)*50);
+              if (i == 0) { // Top boundary, draw one more line, both only gets half of them drawn
+                ctx.moveTo(j*100 + 50, 1150);
+                ctx.lineTo(j*100 + 50, 1250);
+              }
+            }
+            ctx.strokeStyle = "royalblue";
+            ctx.stroke();
+
+          }
         }
       }
 
@@ -244,6 +271,9 @@
     }
 
     flatCanvas.addEventListener("click", (event) => {
+      // If in drawLoopsOnly mode then ignore click
+      if (drawLoopsOnly) return;
+
       // Get coordinate of the clicked position. x and y are what we want
       const rect = flatCanvas.getBoundingClientRect();
       const scaleX = flatCanvas.width / rect.width;
@@ -490,7 +520,7 @@
       consoleLog("Blossom alogirthm applied");
     });
 
-    // Toggle whether only the loop edges are drawn
+    // Toggle whether only the loop edges are drawn. When in this mode user editing via clicking is disabled
     document.querySelector("#looponly-btn").addEventListener("click", (event) => {
       if (drawLoopsOnly) {
         drawLoopsOnly = false;
@@ -500,6 +530,7 @@
         drawLoopsOnly = true;
         event.target.textContent = "Restore Default";
         consoleLog("Display change: Only loop edges are now visible");
+        consoleLog("    Z errors now drawn on dual lattice");
       }
       redrawCanvas2D();
     });
@@ -562,14 +593,14 @@
       <br><br>
       The vertex and plaquette excitations appear at the boundary of error paths and are colored in
       <span style="color: gold">gold</span>.
-      <br><br>
+      <br><hr>
       Manual: Click on edges to add or remove
       <select id="error-type-select">
         <option value="X" selected>X error</option>
         <option value="Z">Z error</option>
       </select>
       <br><br>
-      Random fill errors:
+      Random fill:
       <br>
       X error: <input type="range" id="x-density-slider" class="density-range" min="0" max="1" value="0.1" step="0.01"/>
       <span id="x-density-disp">10</span>%
@@ -579,7 +610,7 @@
       <br>
       <button id="randfill-btn">Random Fill</button>
       <button id="clear-canvas-btn">Clear All Errors</button>
-      <br><br>
+      <hr><br>
       The standard surface-code decoder is 
       Minimum-Weight Perfect Matching (MWPM),
       which pairs up syndrome defects with the lowest total path cost. This demo uses
